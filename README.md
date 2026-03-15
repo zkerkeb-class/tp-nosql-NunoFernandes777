@@ -38,6 +38,19 @@ This project started as a Pokemon API exercise and has grown into a full-stack a
 - `/forum`
 - `/pokemon_supabase`
 
+### Website bonus features
+
+- home page with feature cards and themed Pokemon showcase carousels
+- Pokedex explorer with search, filters, sorting, pagination, and favorites-only browsing
+- journey tracker page for Kanto run planning
+- interactive Kanto map with landmarks, gym leaders, elite four data, and wild encounter zones
+- version-aware journey content for Red, Green, and Blue runs
+- starter selection inside the journey tracker
+- six-slot team builder page with Pokemon picker modal and live search
+- dedicated type chart page in the website navigation
+- forum page scaffold for community discussion
+- custom header navigation linking home, team, journey, type chart, forum, and auth actions
+
 ### Pokemon API
 
 - list all Pokemon
@@ -75,6 +88,17 @@ This project started as a Pokemon API exercise and has grown into a full-stack a
 - get one team with populated Pokemon data
 - update a team
 - delete a team
+
+## Bonus Website Pages
+
+These pages go beyond the original CRUD/API exercises and are already present in the app:
+
+- `/` acts as a richer landing page, with direct entry points to the Pokedex, Journey Tracker, Team page, and Type Chart
+- `/journey` is a journey tracker experience centered on Kanto progression, with version tabs and starter choice
+- `/journey/map` exposes the Kanto interactive map as a dedicated page
+- the map experience includes landmarks, gym information, elite four data, trainer rosters, and version-specific wild encounters
+- `/team` provides a client-side six-Pokemon team builder with search and picker UI
+- `/type-chart` and `/forum` are available as bonus navigable pages in the interface
 
 ## Requirements
 
