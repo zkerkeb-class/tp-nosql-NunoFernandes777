@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "seed:pokemons": "node scripts/seedPokemons.mjs"
+    "seed": "node db/seed.js",
+    "seed:pokemons": "node db/seed.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

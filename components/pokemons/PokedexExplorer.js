@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import Pokemons from "@/components/pokemons/Pokemons";
 
+const FULL_CATALOG_LIMIT = 1000;
+
 const TYPES = [
   "Normal",
   "Fire",
@@ -24,7 +26,7 @@ const TYPES = [
   "Fairy",
 ];
 
-export default function PokedexExplorer({ previewLimit = 200 }) {
+export default function PokedexExplorer() {
   const [name, setName] = useState("");
   const [nameLanguage, setNameLanguage] = useState("english");
   const [type, setType] = useState("");
@@ -32,7 +34,6 @@ export default function PokedexExplorer({ previewLimit = 200 }) {
   const [sortDirection, setSortDirection] = useState("none");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [showFullCatalog, setShowFullCatalog] = useState(false);
 
   const sortValue = useMemo(() => {
     if (sortDirection === "none") return "";
@@ -56,12 +57,10 @@ export default function PokedexExplorer({ previewLimit = 200 }) {
       type,
       sort: sortValue,
       favoritesOnly,
-      limit: showFullCatalog ? 200 : previewLimit,
+      limit: FULL_CATALOG_LIMIT,
     }),
-    [name, nameLanguage, type, sortValue, favoritesOnly, previewLimit, showFullCatalog]
+    [name, nameLanguage, type, sortValue, favoritesOnly]
   );
-
-  const isFiltering = Boolean(name.trim() || type || favoritesOnly || sortDirection !== "none");
 
   const cycleSortDirection = () => {
     setSortDirection((prev) => {
@@ -78,7 +77,7 @@ export default function PokedexExplorer({ previewLimit = 200 }) {
   return (
     <>
       <div className="mb-10">
-        <div className="mb-5 grid gap-3 lg:grid-cols-[1fr_auto]">
+        <div className="mb-5">
           <div
             onClick={toggleFilters}
             className="cursor-pointer select-none rounded-[1.5rem] border border-white/18 bg-white/8 px-4 py-4 backdrop-blur-md transition-colors hover:bg-white/12"
@@ -99,17 +98,6 @@ export default function PokedexExplorer({ previewLimit = 200 }) {
               </div>
             </div>
           </div>
-
-          <button
-            type="button"
-            onClick={() => setShowFullCatalog((prev) => !prev)}
-            className="rounded-[1.5rem] border border-white/18 bg-slate-950/45 px-5 py-4 text-left transition-colors hover:bg-slate-950/60"
-          >
-            <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-300/70">Catalog Mode</div>
-            <div className="mt-1 text-sm font-bold text-white">
-              {showFullCatalog ? "Showing full catalog" : `Showing preview (${previewLimit})`}
-            </div>
-          </button>
         </div>
 
         <div
@@ -214,24 +202,6 @@ export default function PokedexExplorer({ previewLimit = 200 }) {
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-white/15 bg-slate-950/35 px-4 py-3">
-        <div>
-          <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-300/70">Display State</div>
-          <div className="mt-1 text-sm text-white/85">
-            {showFullCatalog ? "Full catalog is enabled." : `Preview mode is enabled with ${previewLimit} visible entries.`}
-          </div>
-        </div>
-        {isFiltering && !showFullCatalog ? (
-          <button
-            type="button"
-            onClick={() => setShowFullCatalog(true)}
-            className="rounded-full border border-white/20 bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-slate-950 transition-transform duration-300 hover:-translate-y-0.5"
-          >
-            Expand for filtered results
-          </button>
-        ) : null}
       </div>
 
       <Pokemons filters={filters} displayLanguage={nameLanguage} />

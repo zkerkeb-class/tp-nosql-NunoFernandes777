@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { readApiResponse } from "@/lib/readApiResponse";
 
 export default function ConnexionPage() {
   const router = useRouter();
@@ -23,9 +24,9 @@ export default function ConnexionPage() {
         body: JSON.stringify({ username, password }),
       });
 
-      const data = await response.json();
+      const data = await readApiResponse(response);
       if (!response.ok) {
-        throw new Error(data?.error || "Connexion failed");
+        throw new Error(data?.details || data?.error || "Connexion failed");
       }
 
       router.push("/");

@@ -7,7 +7,8 @@ import AuthPokeballButton from "@/components/auth/AuthPokeballButton";
 export default function MainHeader() {
   const pathname = usePathname();
   const isJourneyPage = pathname === "/journey";
-  const hideHeader = pathname === "/connexion";
+  const hideHeader =
+    pathname === "/connexion" || pathname?.startsWith("/pokemon/");
 
   if (hideHeader) return null;
 

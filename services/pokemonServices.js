@@ -1,6 +1,5 @@
 import { connectToDatabase } from "@/lib/mongodb";
 import Pokemon from "@/mvc/models/Pokemon";
-import pokemonsData from "@/data/pokemons.json";
 
 const typeToEnglish = {
   Normal: "Normal",
@@ -120,53 +119,18 @@ function toStoragePokemonShape(pokemon) {
 }
 
 export async function getAllPokemons() {
-  const baseline = pokemonsData.map(normalizePokemon);
-  try {
-    await connectToDatabase();
-    const data = await Pokemon.find({}).sort({ id: 1, id_pokedex: 1 }).lean();
-    const dbPokemons = data.map(normalizePokemon);
-
-    const byId = new Map(
-      baseline
-        .filter((pokemon) => Number.isFinite(Number(pokemon.id)))
-        .map((pokemon) => [Number(pokemon.id), pokemon])
-    );
-
-    for (const pokemon of dbPokemons) {
-      const id = Number(pokemon.id);
-      if (Number.isFinite(id)) {
-        byId.set(id, pokemon);
-      }
-    }
-
-    return Array.from(byId.values()).sort((a, b) => Number(a.id) - Number(b.id));
-  } catch (error) {
-    console.error("Error fetching pokemons from MongoDB:", error);
-    return baseline;
-  }
+  await connectToDatabase();
+  const data = await Pokemon.find({}).sort({ id: 1 }).lean();
+  return data.map(normalizePokemon);
 }
 
 export async function getPokemonsById(id) {
   const numericId = Number(id);
-  try {
-    await connectToDatabase();
-    const pokemon = await Pokemon.findOne({
-      $or: [
-        { id: numericId },
-        { id_pokedex: numericId },
-        { pokedex_id: numericId },
-      ],
-    }).lean();
+  if (!Number.isFinite(numericId)) return null;
 
-    if (pokemon) return normalizePokemon(pokemon);
-
-    const local = pokemonsData.find((item) => item.id === numericId);
-    return local ? normalizePokemon(local) : null;
-  } catch (error) {
-    console.error("Error fetching pokemon by id from MongoDB:", error);
-    const local = pokemonsData.find((item) => item.id === numericId);
-    return local ? normalizePokemon(local) : null;
-  }
+  await connectToDatabase();
+  const pokemon = await Pokemon.findOne({ id: numericId }).lean();
+  return pokemon ? normalizePokemon(pokemon) : null;
 }
 
 export async function addPokemon(pokemon) {

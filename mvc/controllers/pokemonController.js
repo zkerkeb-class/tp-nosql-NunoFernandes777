@@ -3,6 +3,44 @@ import Pokemon from "@/mvc/models/Pokemon";
 import { getAllPokemons, getPokemonsById } from "@/services/pokemonServices";
 import { toRawPokemonShape } from "@/mvc/controllers/pokemonMapper";
 
+const ALLOWED_LANGUAGES = ["english", "japanese", "chinese", "french"];
+
+function escapeRegex(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function buildPokemonQueryFilter({ type, name, nameLanguage }) {
+  const filter = {};
+  const normalizedName = String(name || "").trim();
+
+  if (type) {
+    filter.type = String(type);
+  }
+
+  if (normalizedName) {
+    const regex = new RegExp(escapeRegex(normalizedName), "i");
+    if (ALLOWED_LANGUAGES.includes(nameLanguage)) {
+      filter[`name.${nameLanguage}`] = regex;
+    } else {
+      filter.$or = ALLOWED_LANGUAGES.map((language) => ({
+        [`name.${language}`]: regex,
+      }));
+    }
+  }
+
+  return filter;
+}
+
+function buildPokemonSort(sortKey, safeLanguage, direction) {
+  if (!sortKey) {
+    return "id";
+  }
+
+  const prefix = direction === -1 ? "-" : "";
+  const normalizedSortKey = sortKey === "name" ? `name.${safeLanguage}` : sortKey;
+  return `${prefix}${normalizedSortKey}`;
+}
+
 export async function listPokemonsController() {
   const pokemons = await getAllPokemons();
   return pokemons.map(toRawPokemonShape);
@@ -15,63 +53,48 @@ export async function queryPokemonsController({
   sort,
   page = 1,
   limit = 50,
+  responseShape = "paginated",
 }) {
-  await connectToDatabase();
-  const allowedLanguages = ["english", "japanese", "chinese", "french"];
-
-  const filter = {};
-
-  if (type) {
-    filter.type = type;
-  }
-
-  if (name) {
-    if (nameLanguage && allowedLanguages.includes(nameLanguage)) {
-      filter[`name.${nameLanguage}`] = { $regex: name, $options: "i" };
-    } else {
-      filter.$or = allowedLanguages.map((language) => ({
-        [`name.${language}`]: { $regex: name, $options: "i" },
-      }));
-    }
-  }
-
   const safePage = Number.isFinite(Number(page)) && Number(page) > 0 ? Number(page) : 1;
   const safeLimit =
     Number.isFinite(Number(limit)) && Number(limit) > 0 ? Number(limit) : 50;
   const skip = (safePage - 1) * safeLimit;
-  const safeLanguage = allowedLanguages.includes(nameLanguage)
+  const safeLanguage = ALLOWED_LANGUAGES.includes(nameLanguage)
     ? nameLanguage
     : "english";
-  let resolvedSort = sort;
+  const normalizedName = String(name || "").trim().toLowerCase();
+  const sortValue = String(sort || "");
+  const direction = sortValue.startsWith("-") ? -1 : 1;
+  const sortKey = sortValue.startsWith("-") ? sortValue.slice(1) : sortValue;
+  const filter = buildPokemonQueryFilter({
+    type,
+    name: normalizedName,
+    nameLanguage,
+  });
+  const sortDefinition = buildPokemonSort(sortKey, safeLanguage, direction);
 
-  if (sort === "name" || sort === "-name") {
-    const direction = sort.startsWith("-") ? "-" : "";
-    resolvedSort = `${direction}name.${safeLanguage}`;
+  await connectToDatabase();
+
+  if (responseShape === "array") {
+    const items = await Pokemon.find(filter).sort(sortDefinition).lean();
+    return items.map(toRawPokemonShape);
   }
 
-  let query = Pokemon.find(filter);
-  if (resolvedSort) {
-    query = query.sort(resolvedSort);
-  }
-
-  const [items, total] = await Promise.all([
-    query.skip(skip).limit(safeLimit).lean(),
-    Pokemon.countDocuments(filter),
-  ]);
-
-  const pokemons = items.map(toRawPokemonShape);
+  const total = await Pokemon.countDocuments(filter);
+  const items = await Pokemon.find(filter)
+    .sort(sortDefinition)
+    .skip(skip)
+    .limit(safeLimit)
+    .lean();
+  const rawItems = items.map(toRawPokemonShape);
   const totalPages = Math.max(1, Math.ceil(total / safeLimit));
 
   return {
-    data: pokemons,
-    pagination: {
-      page: safePage,
-      limit: safeLimit,
-      total,
-      totalPages,
-      hasNextPage: safePage < totalPages,
-      hasPrevPage: safePage > 1,
-    },
+    data: rawItems,
+    page: safePage,
+    limit: safeLimit,
+    total,
+    totalPages,
   };
 }
 

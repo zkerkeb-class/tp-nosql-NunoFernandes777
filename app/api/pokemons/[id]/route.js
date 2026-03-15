@@ -1,10 +1,25 @@
 import { NextResponse } from "next/server";
+import { requireAuth } from "@/middleware/auth";
 import {
   deletePokemonByIdController,
   getPokemonByIdController,
   updatePokemonByIdController,
 } from "@/mvc/controllers/pokemonController";
-import { requireAuth } from "@/mvc/middlewares/authMiddleware";
+
+function getMutationErrorResponse(error, fallbackMessage) {
+  if (error?.name === "ValidationError" || error?.name === "CastError") {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  if (error?.code === 11000) {
+    return NextResponse.json({ error: "Un Pokemon avec cet id existe deja." }, { status: 400 });
+  }
+
+  return NextResponse.json(
+    { error: fallbackMessage, details: String(error) },
+    { status: 500 }
+  );
+}
 
 export async function GET(_request, { params }) {
   try {
@@ -41,14 +56,7 @@ export async function PUT(request, { params }) {
 
     return NextResponse.json(updated, { status: 200 });
   } catch (error) {
-    if (error?.code === 11000) {
-      return NextResponse.json({ error: "Pokemon id already exists" }, { status: 409 });
-    }
-
-    return NextResponse.json(
-      { error: "Failed to update pokemon", details: String(error) },
-      { status: 400 }
-    );
+    return getMutationErrorResponse(error, "Failed to update pokemon");
   }
 }
 
@@ -66,10 +74,7 @@ export async function DELETE(_request, { params }) {
       return NextResponse.json({ error: "Pokemon not found" }, { status: 404 });
     }
 
-    return NextResponse.json(
-      { message: "Pokemon deleted successfully", pokemon: deleted },
-      { status: 200 }
-    );
+    return new NextResponse(null, { status: 204 });
   } catch (error) {
     return NextResponse.json(
       { error: "Failed to delete pokemon", details: String(error) },
